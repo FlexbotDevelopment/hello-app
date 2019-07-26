@@ -1,0 +1,49 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: hello-app-certificate
+  namespace: istio-system
+spec:
+  dnsNames:
+  - hello-app.example.com
+  issuerRef:
+    kind: ClusterIssuer
+    name: selfsigning-issuer
+  secretName: hello-app-certificate
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: hello-app-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: "hello-app-certificate"
+    hosts:
+    - "hello-app.example.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: hello-app-virtualservice
+spec:
+  hosts:
+  - "hello-app.example.com"
+  gateways:
+  - hello-app-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 80
+        host: hello-app
